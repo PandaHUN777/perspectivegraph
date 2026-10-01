@@ -36,6 +36,44 @@ beforeEach(() => {
 afterEach(() => vi.unstubAllGlobals());
 
 describe("AttackPathList", () => {
+  it("leads with rounded triage priority and its band instead of exploit score", () => {
+    const ranked: AttackPath = {
+      ...route,
+      score: 0.55,
+      priority: 60.6,
+      priorityLabel: "P2",
+      runtimeConfirmed: false,
+    };
+    render(<AttackPathList paths={[ranked]} selectedId={null} onSelect={() => {}} />);
+    const row = screen.getByRole("button", { name: /payments-admin/ });
+
+    expect(within(row).getByText("61")).toBeInTheDocument();
+    expect(within(row).getByText("P2")).toBeInTheDocument();
+    expect(row).not.toHaveTextContent("55%");
+  });
+
+  it("uses the exploit score only when priority is unavailable", () => {
+    const olderBackendRoute: AttackPath = {
+      ...route,
+      score: 0.55,
+      priority: null,
+      priorityLabel: null,
+      runtimeConfirmed: false,
+    };
+    render(<AttackPathList paths={[olderBackendRoute]} selectedId={null} onSelect={() => {}} />);
+    const row = screen.getByRole("button", { name: /payments-admin/ });
+
+    expect(within(row).getByText("55%")).toBeInTheDocument();
+    expect(within(row).queryByText("P2")).toBeNull();
+  });
+
+  it("gives the runtime indicator its accessible name", () => {
+    render(<AttackPathList paths={[route]} selectedId={null} onSelect={() => {}} />);
+    const row = screen.getByRole("button", { name: /payments-admin/ });
+
+    expect(within(row).getByRole("img", { name: "Runtime-confirmed by Falco" })).toBeInTheDocument();
+  });
+
   it("shows both ends of a route in full", () => {
     // The row used to cut both names to fit one line - "edge-al… → payments-admi…" - so
     // the two things a route IS were the two things the list could not show. The
